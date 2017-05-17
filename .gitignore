@@ -1,0 +1,28 @@
+# C++ objects and libs
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+*.slo
+*.lo
+*.o
+*.a
+*.la
+*.lai
+*.so
+*.dll
+*.dylib
+
+# Qt-es
+
+*.pro.user
+*.pro.user.*
+moc_*.cpp
+qrc_*.cpp
+Makefile
+*-build-*
+*.out
+.idea
+.vscode
+*.*~
+.idea*
+*.cbp
