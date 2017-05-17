@@ -1,0 +1,10 @@
+*.swp
+*.swo
+*.o
+cscope.*
+echosrv
+sslh-fork
+sslh-select
+sslh.8.gz
+tags
+version.h

@@ -1,0 +1,238 @@
+# I'm just not gonna write troff :-)
+
+=head1 NAME
+
+ sslh - protocol demultiplexer
+
+=head1 SYNOPSIS
+
+sslh [B<-F>I<config file>] [ B<-t> I<num> ] [B<--transparent>] [B<-p> I<listening address> [B<-p> I<listening address> ...] [B<--ssl> I<target address for SSL>] [B<--tls> I<target address for TLS>] [B<--ssh> I<target address for SSH>] [B<--openvpn> I<target address for OpenVPN>] [B<--http> I<target address for HTTP>] [B<--xmpp> I<target address for XMPP>] [B<--tinc> I<target address for TINC>] [B<--anyprot> I<default target address>] [B<--on-timeout> I<protocol name>] [B<-u> I<username>] [B<-P> I<pidfile>] [-v] [-i] [-V] [-f] [-n]
+
+=head1 DESCRIPTION
+
+B<sslh> accepts connections on specified ports, and forwards
+them further based on tests performed on the first data
+packet sent by the remote client.
+
+Probes for HTTP, SSL, SSH, OpenVPN, tinc, XMPP are
+implemented, and any other protocol that can be tested using
+a regular expression, can be recognised. A typical use case
+is to allow serving several services on port 443 (e.g. to
+connect to ssh from inside a corporate firewall, which
+almost never block port 443) while still serving HTTPS on
+that port. 
+
+Hence B<sslh> acts as a protocol demultiplexer, or a
+switchboard. Its name comes from its original function to
+serve SSH and HTTPS on the same port.
+
+=head2 Libwrap support
+
+One drawback of B<sslh> is that the servers do not see the
+original IP address of the client anymore, as the connection
+is forwarded through B<sslh>.
+
+For this reason, B<sslh> can be compiled with B<libwrap> to
+check accesses defined in F</etc/hosts.allow> and
+F</etc/hosts.deny>.  Libwrap services can be defined using
+the configuration file.
+
+=head2 Configuration file
+
+A configuration file can be supplied to B<sslh>. Command
+line arguments override file settings. B<sslh> uses
+B<libconfig> to parse the configuration file, so the general
+file format is indicated in
+L<http://www.hyperrealm.com/libconfig/libconfig_manual.html>.
+Please refer to the example configuration file provided with
+B<sslh> for the specific format (Options have the same names
+as on the command line, except for the list of listen ports
+and the list of protocols).
+
+The configuration file makes it possible to specify
+protocols using regular expressions: a list of regular
+expressions is given as the I<regex_patterns> parameter, and if the
+first packet received from the client matches any of these
+expressions, B<sslh> connects to that protocol.
+
+=head2 Probing protocols
+
+When receiving an incoming connection, B<sslh> will read the
+first bytes sent by the connecting client. It will then
+probe for the protocol in the order specified on the command
+line (or the configuration file). Therefore B<--anyprot>
+should alway be used last, as it always succeeds and further
+protocols will never be tried.
+
+If no data is sent by the client, B<sslh> will eventually
+time out and connect to the protocol specified with
+B<--on-timeout>, or I<ssh> if none is specified.
+
+=head2 Logging
+
+As a security/authorization program, B<sslh> logs to the
+LOG_AUTH facility, with priority LOG_INFO for normal
+connections and LOG_ERR for failures.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-F>I<filename>, B<--config> I<filename>
+
+Uses I<filename> as configuration file. If other
+command-line options are specified, they will override the
+configuration file's settings.
+
+When using the shorthand version, make sure there should be
+no space between B<-F> and the I<filename>.
+
+=item B<-t> I<num>, B<--timeout> I<num>
+
+Timeout before forwarding the connection to the timeout
+protocol (which should usually be SSH). Default is 2s.
+
+=item B<--on-timeout> I<protocol name>
+
+Name of the protocol to connect to after the timeout period
+is over. Default is 'ssh'.
+
+=item B<--transparent>
+
+Makes B<sslh> behave as a transparent proxy, i.e. the
+receiving service sees the original client's IP address.
+This works on Linux only and involves B<iptables> settings.
+Refer to the README for more information.
+
+=item B<-p> I<listening address>, B<--listen> I<listening address>
+
+Interface and port on which to listen, e.g. I<foobar:443>,
+where I<foobar> is the name of an interface (typically the
+IP address on which the Internet connection ends up).
+
+This can be specified several times to bind B<sslh> to
+several addresses.
+
+=item B<--ssl> I<target address>
+
+=item B<--tls> I<target address>
+
+Interface and port on which to forward SSL connection,
+typically I<localhost:443>.
+
+Note that you can set B<sslh> to listen on I<ext_ip:443> and
+B<httpd> to listen on I<localhost:443>: this allows clients
+inside your network to just connect directly to B<httpd>.
+
+Also, B<sslh> probes for SSLv3 (or TLSv1) handshake and will
+reject connections from clients requesting SSLv2. This is
+compliant with RFC6176 which prohibits the usage of SSLv2. If
+you wish to accept SSLv2, use B<--default> instead.
+
+=item B<--ssh> I<target address>
+
+Interface and port on which to forward SSH connections,
+typically I<localhost:22>.
+
+=item B<--openvpn> I<target address>
+
+Interface and port on which to forward OpenVPN connections,
+typically I<localhost:1194>.
+
+=item B<--xmpp> I<target address>
+
+Interface and port on which to forward XMPP connections,
+typically I<localhost:5222>.
+
+=item B<--http> I<target address>
+
+Interface and port on which to forward HTTP connections,
+typically I<localhost:80>.
+
+=item B<--tinc> I<target address>
+
+Interface and port on which to forward tinc connections,
+typically I<localhost:655>.
+
+This is experimental. If you use this feature, please report
+the results (even if it works!)
+
+=item B<--anyprot> I<target address>
+
+Interface and port on which to forward if no other protocol
+has been found. Because B<sslh> tries protocols in the order
+specified on the command line, this should be specified
+last. If no default is specified, B<sslh> will forward
+unknown protocols to the first protocol specified.
+
+=item B<-v>, B<--verbose>
+
+Increase verboseness.
+
+=item B<-n>, B<--numeric>
+
+Do not attempt to resolve hostnames: logs will contain IP
+addresses. This is mostly useful if the system's DNS is slow
+and running the I<sslh-select> variant, as DNS requests will
+hang all connections.
+
+=item B<-V>
+
+Prints B<sslh> version.
+
+=item B<-u> I<username>, B<--user> I<username>
+
+Requires to run under the specified username. 
+
+=item B<-P> I<pidfile>, B<--pidfile> I<pidfile>
+
+Specifies a file in which to write the PID of the main
+server.
+
+=item B<-i>, B<--inetd>
+
+Runs as an I<inetd> server. Options B<-P> (PID file), B<-p>
+(listen address), B<-u> (user) are ignored.
+
+=item B<-f>, B<--foreground>
+
+Runs in foreground. The server will not fork and will remain connected
+to the terminal. Messages normally sent to B<syslog> will also be sent
+to I<stderr>.
+
+=item B<--background>
+
+Runs in background. This overrides B<foreground> if set in
+the configuration file (or on the command line, but there is
+no point setting both on the command line unless you have a
+personality disorder).
+
+=back
+
+=head1 FILES
+
+=over 4
+
+=item F</etc/init.d/sslh>
+
+Start-up script. The standard actions B<start>, B<stop> and
+B<restart> are supported.
+
+=item F</etc/default/sslh>
+
+Server configuration. These are environment variables
+loaded by the start-up script and passed to B<sslh> as
+command-line arguments. Refer to the OPTIONS section for a
+detailed explanation of the variables used by B<sslh>.
+
+=back
+
+=head1 SEE ALSO
+
+The latest version is available from
+L<http://www.rutschle.net/tech/sslh>, and can be tracked
+from L<http://freecode.com/projects/sslh>.
+
+=head1 AUTHOR
+
+Written by Yves Rutschle.

@@ -1,0 +1,298 @@
+v1.18:	29MAR2016
+	Added USELIBPCRE to make use of regex engine
+	optional.
+
+	Added support for RFC4366 SNI and RFC7301 ALPN
+	(Travis Burtrum)
+
+	Changed connection log to include the name of the probe that
+	triggered.
+
+	Changed configuration file format: 'probe' field is
+	no longer required, 'name' field can now contain
+	'tls' or 'regex', with corresponding options (see
+	example.cfg)
+	Added 'log_level' option to each protocol, which
+	allows to turn off generation of log at each
+	connection.
+	Added 'keepalive' option.
+
+v1.17: 	09MAR2015
+	Support RFC5952-style IPv6 addresses, e.g. [::]:443.
+
+	Transparant proxy support for FreeBSD.
+	(Ruben van Staveren)
+
+	Using -F with no argument will try
+	/etc/sslh/sslh.cfg and then /etc/sslh.cfg as
+	configuration files. (argument to -F can no longer
+	be separated from the option by a space, e.g. must
+	be -Ffoo.cfg)
+
+	Call setgroups() before setgid() (fixes potential
+	privilege escalation).
+	(Lars Vogdt)
+
+	Use portable way of getting modified time for OSX
+	support.
+	(Aaron Madlon-Kay)
+
+	Example configuration for fail2ban.
+	(Every Mouw)
+
+v1.16:	11FEB2014
+	Probes made more resilient, to incoming data
+	containing NULLs. Also made them behave properly
+	when receiving too short packets to probe on the
+	first incoming packet.
+	(Ondrej Kuzník)
+
+	Libcap support: Keep only CAP_NET_ADMIN if started
+	as root with transparent proxying and dropping
+	priviledges (enable USELIBCAP in Makefile). This
+	avoids having to mess with filesystem capabilities.
+	(Sebastian Schmidt/yath)
+
+	Fixed bugs related to getpeername that would cause
+	sslh to quit erroneously (getpeername can return
+	actual errors if connections are dropped before
+	getting to getpeername).
+
+	Set IP_FREEDBIND if available to bind to addresses
+	that don't yet exist.
+
+v1.15:	27JUL2013
+	Added --transparent option for transparent proxying.
+	See README for iptables magic and capability
+	management.
+
+	Fixed bug in sslh-select: if number of opened file
+	descriptor became bigger than FD_SETSIZE, bad things
+	would happen.
+
+	Fixed bug in sslh-select: if socket dropped while
+	deferred_data was present, sslh-select would crash.
+
+	Increased FD_SETSIZE for Cygwin, as the default 64
+	is too low for even moderate load.
+
+v1.14: 21DEC2012
+	Corrected OpenVPN probe to support pre-shared secret
+	mode (OpenVPN port-sharing code is... wrong). Thanks
+	to Kai Ellinger for help in investigating and
+	testing.
+
+	Added an actual TLS/SSL probe.
+
+	Added configurable --on-timeout protocol
+	specification.
+
+	Added a --anyprot protocol probe (equivalent to what
+	--ssl was).
+
+	Makefile respects the user's compiler and CFLAG
+	choices (falling back to the current values if
+	undefined), as well as LDFLAGS. 
+	(Michael Palimaka)
+
+	Added "After" and "KillMode" to systemd.sslh.service
+	(Thomas Weißschuh).
+
+	Added LSB tags to etc.init.d.sslh
+	(Thomas Varis).
+
+v1.13: 18MAY2012
+	Write PID file before dropping privileges.
+
+	Added --background, which overrides 'foreground'
+	configuration file setting.
+
+	Added example systemd service file from Archlinux in
+	scripts/
+	https://projects.archlinux.org/svntogit/community.git/tree/trunk/sslh.service?h=packages/sslh
+	(Sébastien Luttringer)
+
+v1.12: 08MAY2012
+	Added support for configuration file.
+
+	New protocol probes can be defined using regular
+	expressions that match the first packet sent by the
+	client.
+
+	sslh now connects timed out connections to the first
+	configured protocol instead of 'ssh' (just make sure
+	ssh is the first defined protocol).
+
+	sslh now tries protocols in the order in which they
+	are defined (just make sure sslh is the last defined
+	protocol).
+
+v1.11: 21APR2012
+	WARNING: defaults have been removed for --user and
+	--pidfile options, update your start-up scripts!
+
+	No longer stop sslh when reverse DNS requests fail
+	for logging.
+
+	Added HTTP probe.
+
+	No longer create new session if running in
+	foreground.
+
+	No longer default to changing user to 'nobody'. If
+	--user isn't specified, just run as current user.
+
+	No longer create PID file by default, it should be
+	explicitely set with --pidfile.
+
+	No longer log to syslog if in foreground. Logs are
+	instead output to stderr.
+
+	The four changes above make it straightforward to
+	integrate sslh with systemd, and should help with
+	launchd.
+
+v1.10: 27NOV2011
+	Fixed calls referring to sockaddr length so they work
+	with FreeBSD.
+
+	Try target addresses in turn until one works if
+	there are several (e.g. "localhost:22" resolves to
+	an IPv6 address and an IPv4 address and sshd does
+	not listen on IPv6).
+
+	Fixed sslh-fork so killing the head process kills
+	the listener processes.
+
+	Heavily cleaned up test suite. Added stress test
+	t_load script. Added coverage (requires lcov).
+
+	Support for XMPP (Arnaud Gendre).
+
+	Updated README.MacOSX (Aaron Madlon-Kay).
+
+v1.9: 02AUG2011
+	WARNING: This version does not work with FreeBSD and
+	derivatives!
+
+	WARNING: Options changed, you'll need to update your
+	start-up scripts! Log format changed, you'll need to
+	update log processing scripts!
+
+	Now supports IPv6 throughout (both on listening and
+	forwarding)
+
+	Logs now contain IPv6 addresses, local forwarding
+	address, and resolves names (unless --numeric is
+	specified).
+
+	Introduced long options.
+
+	Options -l, -s and -o replaced by their long
+	counterparts.
+
+	Defaults for SSL and SSH options suppressed (it's 
+	legitimate to want to use sslh to mux OpenVPN and 
+	tinc while not caring about SSH nor SSL).
+
+	Bind to multiple addresses with multiple -p options.
+
+	Support for tinc VPN (experimental).
+
+	Numeric logging option.
+
+v1.8: 15JUL2011
+	Changed log format to make it possible to link
+	connections to subsequent logs from other services.
+
+	Updated CentOS init.d script (Andre Krajnik).
+
+	Fixed zombie issue with OpenBSD (The SA_NOCLDWAIT flag is not
+	propagated to the child process, so we set up signals after
+	the fork.) (François FRITZ)
+
+	Added -o "OpenVPN" and OpenVPN probing and support.
+
+	Added single-threaded, select(2)-based version.
+
+	Added support for "Bold" SSH clients (clients that speak first)
+	Thanks to Guillaume Ricaud for spotting a regression
+	bug.
+
+	Added -f "foreground" option.
+
+	Added test suite. (only tests connexions. No test for libwrap,
+	setsid, setuid and so on) and corresponding 'make
+	test' target.
+
+	Added README.MacOSX (thanks Aaron Madlon-Kay)
+
+	Documented use with proxytunnel and corkscrew in
+	README.
+
+	
+v1.7: 01FEB2010
+	Added CentOS init.d script (Andre Krajnik).
+
+	Fixed default ssl address inconsistancy, now
+	defaults to "localhost:443" and fixed documentation
+	accordingly (pointed by Markus Schalke).
+
+	Children no longer bind to the listen socket, so
+	parent server can be stopped without killing an
+	active child (pointed by Matthias Buecher).
+
+	Inetd support (Dima Barsky).
+
+v1.6: 25APR2009
+	Added -V, version option.
+
+	Install target directory configurable in Makefile
+
+	Changed syslog prefix in auth.log to "sslh[%pid]"
+
+	Man page
+
+	new 'make install' and 'make install-debian' targets
+
+	PID file now specified using -P command line option
+
+	Actually fixed zombie generation (the v1.5 patch got
+	lost, doh!)
+
+
+v1.5: 10DEC2008
+	Fixed zombie generation.
+
+	Added support scripts (), Makefile.
+
+	Changed all 'connexions' to 'connections' to please
+	pesky users. Damn users.
+
+v1.4: 13JUL2008
+	Added libwrap support for ssh service (Christian Weinberger)
+	Only SSH is libwraped, not SSL.
+
+v1.3: 14MAY2008
+	Added parsing for local interface to listen on
+
+	Changed default SSL connection to port 442 (443 doesn't make
+	sense as a default as we're already listening on 443)
+
+	Syslog incoming connections
+
+v1.2: 12MAY2008
+	Fixed compilation warning for AMD64 (Thx Daniel Lange)
+
+v1.1: 21MAY2007
+	Making sslhc more like a real daemon:
+	* If $PIDFILE is defined, write first PID to it upon startup
+	* Fork at startup (detach from terminal)
+	(thanks to http://www.enderunix.org/docs/eng/daemon.php -- good checklist)
+	* Less memory usage (?)
+
+v1.0: 
+	Basic functionality: privilege dropping, target hostnames and ports
+	configurable.
+
+
